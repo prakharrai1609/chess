@@ -1,0 +1,25 @@
+body {
+  margin: 1rem;
+  display: flex;
+}
+
+.heading {
+  display: block;
+  width: 100%;
+  margin-top: 1em;
+}
+
+.node {
+  height: 3rem;
+  width: 3rem;
+  border: 1px solid black;
+}
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr); 
+  gap: 1px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+}
