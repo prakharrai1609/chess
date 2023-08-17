@@ -6,6 +6,10 @@ const BASE_PATH = './public/';
 
 let holding = null;
 
+let toggle = true;
+
+let errImg = `<img src="${BASE_PATH + 'err.jpeg'}" >`
+
 const PATH = {
   ROOK: {
     BLACK: 'br.png',
@@ -43,6 +47,8 @@ function getPiece(piece, isBlack, row, col) {
   node.setAttribute('draggable', true);
   node.setAttribute('piece', true);
   node.setAttribute('kind', piece);
+  node.setAttribute('row', row);
+  node.setAttribute('col', col);
   return node;
 }
 
@@ -94,18 +100,70 @@ function handleClash(mover, reciever) {
     throwError(alert, "danger", "<strong>King not safe!</strong>");
     return;
   }
+
+  const nodes = document.querySelectorAll('.node');
+
+  const rr = parseInt(reciever.getAttribute('row'));
+  const rc = parseInt(reciever.getAttribute('col'));
+
+  const mr = parseInt(mover.getAttribute('row'));
+  const mc = parseInt(mover.getAttribute('col'));
+
+  let mov = null, rec = null;
+
+  nodes.forEach(n => {
+    const nr = parseInt(n.getAttribute('data-row'));
+    const nc = parseInt(n.getAttribute('data-col'));
+    if (nr === rr && nc === rc) {
+      rec = n;
+    }
+
+    if (nr === mr && nc === mc) {
+      mov = n;
+    }
+  });
+
+  if (mov && rec) {
+    mover.setAttribute('row', rr);
+    mover.setAttribute('col', rc);
+    rec.innerHTML = mov.innerHTML;
+    mov.innerHTML = "";
+  }
 }
 
-function validMove() {
+function validMove(start, end, clashing) {
+  console.log("start =====>>>> ", start);
+  console.log("end =====>>>> ", end);
+  console.log("clashing =====>>>> ", clashing);
+  if (!clashing) {
+    const srow = parseInt(start.getAttribute('row'));
+    const scol = parseInt(start.getAttribute('col'));
+    const erow = parseInt(end.getAttribute('data-row'));
+    const ecol = parseInt(end.getAttribute('data-col'));
+    
+    console.log("srow, scol, erow, ecol, =====>>>> ", srow, scol, erow, ecol);
+    switch (start.getAttribute('kind')) {
+      case 'PAWN': {
+        if ((srow !== erow + 1 && srow !== erow + 2) || (scol !== ecol)) {
+          console.log("errImg =====>>>> ", errImg);
+          throwError(alert, "danger", errImg);
+          return false;
+        } else {
+          return true;
+        }
+      }
+    }
+  } else {
 
+  }
 }
 
 function grabOrDrop(event) {
   const node = event.target;
 
-  validMove();
-
   if (holding && node.getAttribute('piece') === 'false') {
+    if (!validMove(holding, node, false)) return;
+
     const row = parseInt(node.getAttribute('data-row'));
     const col = parseInt(node.getAttribute('data-col'));
 
@@ -114,6 +172,8 @@ function grabOrDrop(event) {
       const nr = parseInt(n.getAttribute('data-row'));
       const nc = parseInt(n.getAttribute('data-col'));
       if (nr === row && nc === col) {
+        holding.setAttribute('row', nr);
+        holding.setAttribute('col', nc);
         n.appendChild(holding)
         holding = null;
       }
@@ -122,6 +182,8 @@ function grabOrDrop(event) {
   }
 
   if (holding && node.getAttribute('piece') && holding !== node) {
+    if (!validMove(holding, node, true)) return;
+
     handleClash(holding, node);
     holding = null;
     return;
@@ -171,6 +233,7 @@ function initialize() {
   createGrid(BOARD_SIZE);
   setPieces();
 
+  chessBoard.removeEventListener('click', handleNodeClick);
   chessBoard.addEventListener('click', handleNodeClick);
 }
 
