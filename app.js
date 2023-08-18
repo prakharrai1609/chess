@@ -10,6 +10,9 @@ let toggle = true;
 
 let errImg = `<img src="${BASE_PATH + 'err.jpeg'}" >`
 
+const isFirstMove = {};
+let uniqueId = 1;
+
 const PATH = {
   ROOK: {
     BLACK: 'br.png',
@@ -49,6 +52,10 @@ function getPiece(piece, isBlack, row, col) {
   node.setAttribute('kind', piece);
   node.setAttribute('row', row);
   node.setAttribute('col', col);
+  node.setAttribute('id', uniqueId);
+  isFirstMove[uniqueId] = true;
+  uniqueId += 1;
+
   return node;
 }
 
@@ -132,29 +139,47 @@ function handleClash(mover, reciever) {
 }
 
 function validMove(start, end, clashing) {
-  console.log("start =====>>>> ", start);
-  console.log("end =====>>>> ", end);
-  console.log("clashing =====>>>> ", clashing);
   if (!clashing) {
     const srow = parseInt(start.getAttribute('row'));
     const scol = parseInt(start.getAttribute('col'));
     const erow = parseInt(end.getAttribute('data-row'));
     const ecol = parseInt(end.getAttribute('data-col'));
     
-    console.log("srow, scol, erow, ecol, =====>>>> ", srow, scol, erow, ecol);
     switch (start.getAttribute('kind')) {
       case 'PAWN': {
-        if ((srow !== erow + 1 && srow !== erow + 2) || (scol !== ecol)) {
-          console.log("errImg =====>>>> ", errImg);
-          throwError(alert, "danger", errImg);
-          return false;
+        if (isFirstMove[start.getAttribute('id')]) {
+          if ((srow !== erow + 1 && srow !== erow + 2) || (scol !== ecol)) {
+            throwError(alert, "danger", errImg);
+            return false;
+          } else { 
+            isFirstMove[start.getAttribute('id')] = false;
+            return true;
+          }
         } else {
-          return true;
+          if ((srow !== erow + 1) || (scol !== ecol)) {
+            throwError(alert, "danger", errImg);
+            return false;
+          } else {
+            return true;
+          }
         }
       }
+
+      case 'KNIGHT': {
+        const rowDiff = Math.abs(srow - erow);
+        const colDiff = Math.abs(scol - ecol);
+        
+        if ((rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2)) {
+          return true;
+        } else {
+          throwError(alert, "danger", errImg);
+          return false;
+        }
+      }
+      
     }
   } else {
-
+    handleClash(start, end);
   }
 }
 
@@ -162,7 +187,10 @@ function grabOrDrop(event) {
   const node = event.target;
 
   if (holding && node.getAttribute('piece') === 'false') {
-    if (!validMove(holding, node, false)) return;
+    if (!validMove(holding, node, false)) {
+      holding = null;
+      return;
+    }
 
     const row = parseInt(node.getAttribute('data-row'));
     const col = parseInt(node.getAttribute('data-col'));
@@ -182,9 +210,10 @@ function grabOrDrop(event) {
   }
 
   if (holding && node.getAttribute('piece') && holding !== node) {
-    if (!validMove(holding, node, true)) return;
-
-    handleClash(holding, node);
+    if (!validMove(holding, node, true)) {
+      holding = null;
+      return;
+    }
     holding = null;
     return;
   }
@@ -233,7 +262,7 @@ function initialize() {
   createGrid(BOARD_SIZE);
   setPieces();
 
-  chessBoard.removeEventListener('click', handleNodeClick);
+  // chessBoard.removeEventListener('click', handleNodeClick);
   chessBoard.addEventListener('click', handleNodeClick);
 }
 
