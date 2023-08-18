@@ -6,7 +6,7 @@ const BASE_PATH = './public/';
 
 let holding = null;
 
-let toggle = true;
+let isWhiteMove = true;
 
 let errImg = `<img src="${BASE_PATH + 'err.jpeg'}" >`
 
@@ -99,12 +99,10 @@ function handleClash(mover, reciever) {
   const rColor = reciever.getAttribute('color');
 
   if (mColor === rColor) {
-    throwError(alert, "danger", "<strong>Not allowed.</strong> Cannibalism!!!");
     return;
   }
 
   if (willGetCheck()) {
-    throwError(alert, "danger", "<strong>King not safe!</strong>");
     return;
   }
 
@@ -147,20 +145,35 @@ function validMove(start, end, clashing) {
     
     switch (start.getAttribute('kind')) {
       case 'PAWN': {
-        if (isFirstMove[start.getAttribute('id')]) {
-          if ((srow !== erow + 1 && srow !== erow + 2) || (scol !== ecol)) {
-            throwError(alert, "danger", errImg);
-            return false;
-          } else { 
-            isFirstMove[start.getAttribute('id')] = false;
-            return true;
+        if (isWhiteMove) {
+          if (isFirstMove[start.getAttribute('id')]) {
+            if ((srow !== erow + 1 && srow !== erow + 2) || (scol !== ecol)) {
+              return false;
+            } else { 
+              isFirstMove[start.getAttribute('id')] = false;
+              return true;
+            }
+          } else {
+            if ((srow !== erow + 1) || (scol !== ecol)) {
+              return false;
+            } else {
+              return true;
+            }
           }
         } else {
-          if ((srow !== erow + 1) || (scol !== ecol)) {
-            throwError(alert, "danger", errImg);
-            return false;
+          if (isFirstMove[start.getAttribute('id')]) {
+            if ((srow !== erow - 1 && srow !== erow - 2) || (scol !== ecol)) {
+              return false;
+            } else { 
+              isFirstMove[start.getAttribute('id')] = false;
+              return true;
+            }
           } else {
-            return true;
+            if ((srow !== erow - 1) || (scol !== ecol)) {
+              return false;
+            } else {
+              return true;
+            }
           }
         }
       }
@@ -172,10 +185,25 @@ function validMove(start, end, clashing) {
         if ((rowDiff === 2 && colDiff === 1) || (rowDiff === 1 && colDiff === 2)) {
           return true;
         } else {
-          throwError(alert, "danger", errImg);
           return false;
         }
       }
+
+      case 'BISHOP': {
+        const rowDiff = Math.abs(srow - erow);
+        const colDiff = Math.abs(scol - ecol);
+        
+        if (rowDiff === colDiff) {
+          return true;
+          // Additional logic needed to check if the path is clear
+          // and there are no obstructions in the diagonal path
+          // Return true if movement is valid, else show error and return false
+        } else {
+          holding = null;
+          return false;
+        }
+      }
+      
       
     }
   } else {
@@ -206,6 +234,25 @@ function grabOrDrop(event) {
         holding = null;
       }
     });
+    isWhiteMove = !isWhiteMove;
+    const imgs = document.querySelectorAll('img[piece]');
+
+    if (!isWhiteMove){
+      chessBoard.style.transformOrigin = 'center';
+      chessBoard.style.transform = 'rotate(180deg)';
+      imgs.forEach(img => {
+        img.style.transformOrigin = 'center';
+        img.style.transform = 'rotate(180deg)';
+      });
+    } else {
+      chessBoard.style.transformOrigin = 'center';
+      chessBoard.style.transform = 'rotate(0deg)';
+      imgs.forEach(img => {
+        img.style.transformOrigin = 'center';
+        img.style.transform = 'rotate(0deg)';
+      });
+    }
+
     return;
   }
 
@@ -219,7 +266,10 @@ function grabOrDrop(event) {
   }
 
   if (node.getAttribute('piece') === 'true') {
-    holding = node;
+    if (node.getAttribute('color') === 'white' && isWhiteMove)
+      holding = node;
+    if (node.getAttribute('color') === 'black' && !isWhiteMove)
+      holding = node;
     return;
   }
 }
